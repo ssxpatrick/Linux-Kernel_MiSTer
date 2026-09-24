@@ -72,7 +72,7 @@ jobs:
         env:
           ARCH: arm
           EXTRAVERSION: -MiSTer
-          CROSS_COMPILE: /opt/${{ env.TOOLCHAIN_NAME }}/bin/arm-linux-gnueabihf-
+          CROSS_COMPILE: /opt/${{ env.TOOLCHAIN_NAME }}/bin/arm-none-linux-gnueabihf-
         run: |
           make MiSTer_defconfig
           make -j"$(nproc)" zImage
