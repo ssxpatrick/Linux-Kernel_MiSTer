@@ -8,8 +8,8 @@ on:
       - 'kernel-v*'
 
 env:
-  TOOLCHAIN_NAME: gcc-linaro-6.5.0-2018.12-x86_64_arm-linux-gnueabihf
-  TOOLCHAIN_URL: https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/6.5-2018.12/gcc-linaro-6.5.0-2018.12-x86_64_arm-linux-gnueabihf.tar.xz
+  TOOLCHAIN_NAME: gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf
+  TOOLCHAIN_URL: https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/7.5-2019.12/gcc-linaro-7.5.0-2019.12-x86_64_arm-linux-gnueabihf.tar.xz
 
 jobs:
   build:
