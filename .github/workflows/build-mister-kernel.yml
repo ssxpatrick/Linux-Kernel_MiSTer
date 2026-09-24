@@ -76,13 +76,13 @@ jobs:
         run: |
           make MiSTer_defconfig
           make -j"$(nproc)" zImage
-          make socfpga_cyclone5_de10_nano.dtb
+          make intel/socfpga/socfpga_cyclone5_de10_nano.dtb
 
       - name: Concatenate zImage + device tree
         run: |
           cat \
             arch/arm/boot/zImage \
-            arch/arm/boot/dts/socfpga_cyclone5_de10_nano.dtb \
+            arch/arm/boot/dts/intel/socfpga/socfpga_cyclone5_de10_nano.dtb \
             > zImage_dtb
 
       - name: Set build metadata
