@@ -7,6 +7,9 @@ on:
     tags:
       - 'kernel-v*'
 
+permissions:
+  contents: write
+
 env:
   TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
   TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
