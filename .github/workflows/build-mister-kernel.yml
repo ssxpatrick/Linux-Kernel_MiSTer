@@ -3,16 +3,12 @@ name: Build MiSTer Linux Kernel
 on:
   workflow_dispatch:
 
-  push:
-    tags:
-      - 'kernel-v*'
-
 permissions:
   contents: write
 
-env:
-  TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
-  TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
+# env:
+#   TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
+#   TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
 
 jobs:
   build:
@@ -28,6 +24,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
+            gcc-arm-linux-gnueabihf \
             build-essential \
             git \
             libncurses-dev \
@@ -50,20 +47,20 @@ jobs:
             libgmp3-dev \
             libmpc-dev
 
-      - name: Cache cross-compiler toolchain
-        id: cache-toolchain
-        uses: actions/cache@v4
-        with:
-          path: /opt/${{ env.TOOLCHAIN_NAME }}
-          key: ${{ env.TOOLCHAIN_NAME }}
+      # - name: Cache cross-compiler toolchain
+      #   id: cache-toolchain
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /opt/${{ env.TOOLCHAIN_NAME }}
+      #     key: ${{ env.TOOLCHAIN_NAME }}
 
-      - name: Download ARM cross-compiler toolchain
-        if: steps.cache-toolchain.outputs.cache-hit != 'true'
-        run: |
-          wget -c "${TOOLCHAIN_URL}"
-          sudo mkdir -p /opt
-          sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
-          sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
+      # - name: Download ARM cross-compiler toolchain
+      #   if: steps.cache-toolchain.outputs.cache-hit != 'true'
+      #   run: |
+      #     wget -c "${TOOLCHAIN_URL}"
+      #     sudo mkdir -p /opt
+      #     sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
+      #     sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
 
       - name: Show build information
         run: |
@@ -75,7 +72,7 @@ jobs:
         env:
           ARCH: arm
           EXTRAVERSION: -MiSTer
-          CROSS_COMPILE: /opt/${{ env.TOOLCHAIN_NAME }}/bin/arm-none-linux-gnueabihf-
+          CROSS_COMPILE: arm-none-linux-gnueabihf-
         run: |
           make MiSTer_defconfig
           make -j"$(nproc)" zImage
