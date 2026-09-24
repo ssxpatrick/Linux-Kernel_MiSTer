@@ -13,7 +13,7 @@ on:
 
 env:
   TOOLCHAIN_NAME: gcc-linaro-6.5.0-2018.12-x86_64_arm-linux-gnueabihf
-  TOOLCHAIN_URL: https://releases.linaro.org/components/toolchain/binaries/6.5-2018.12/arm-linux-gnueabihf/gcc-linaro-6.5.0-2018.12-x86_64_arm-linux-gnueabihf.tar.xz
+  TOOLCHAIN_URL: https://developer.arm.com/-/cdn-downloads/permalink/legacy-linaro-gnu-toolchains/6.5-2018.12/gcc-linaro-6.5.0-2018.12-x86_64_arm-linux-gnueabihf.tar.xz
 
 jobs:
   build:
@@ -37,32 +37,9 @@ jobs:
       - name: Download ARM cross-compiler toolchain
         if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
-          set -e
-          ARCHIVE="${TOOLCHAIN_NAME}.tar.xz"
-          # releases.linaro.org has been redirecting old release paths elsewhere,
-          # so try a couple of known mirrors and verify we actually got an xz
-          # archive (not an HTML error/redirect page) before trusting it.
-          MIRRORS=(
-            "${TOOLCHAIN_URL}"
-            "https://releases-ie.linaro.org/components/toolchain/binaries/6.5-2018.12/arm-linux-gnueabihf/${ARCHIVE}"
-            "https://snapshots.linaro.org/components/toolchain/binaries/6.5-2018.12/arm-linux-gnueabihf/${ARCHIVE}"
-          )
-          downloaded=0
-          for url in "${MIRRORS[@]}"; do
-            echo "Trying ${url}"
-            rm -f "${ARCHIVE}"
-            if wget -q -O "${ARCHIVE}" "${url}" && file "${ARCHIVE}" | grep -q "XZ compressed data"; then
-              downloaded=1
-              break
-            fi
-            echo "  -> not a valid archive from this mirror, trying next"
-          done
-          if [ "${downloaded}" -ne 1 ]; then
-            echo "::error::Could not download a valid ${TOOLCHAIN_NAME}.tar.xz from any mirror" >&2
-            exit 1
-          fi
+          wget -c "${TOOLCHAIN_URL}"
           sudo mkdir -p /opt
-          sudo tar xf "${ARCHIVE}" -C /opt
+          sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
           sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
 
       - name: Clone MiSTer kernel sources
