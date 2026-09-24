@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       kernel_ref:
-        description: 'Branch/tag of MiSTer-devel/Linux-Kernel_MiSTer to build'
+        description: 'Branch/tag to build'
         required: false
         default: 'master'
   push:
@@ -18,7 +18,13 @@ env:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.kernel_ref || github.ref }}
+
       - name: Install build dependencies
         run: |
           sudo apt-get update
@@ -42,13 +48,7 @@ jobs:
           sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
           sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
 
-      - name: Clone MiSTer kernel sources
-        run: |
-          git clone --depth=1 --branch "${{ github.event.inputs.kernel_ref || 'master' }}" \
-            https://github.com/MiSTer-devel/Linux-Kernel_MiSTer.git kernel-src
-
       - name: Configure and build kernel
-        working-directory: kernel-src
         env:
           ARCH: arm
           EXTRAVERSION: -MiSTer
@@ -59,20 +59,22 @@ jobs:
           make socfpga_cyclone5_de10_nano.dtb
 
       - name: Concatenate zImage + device tree
-        working-directory: kernel-src
-        run: cat arch/arm/boot/zImage arch/arm/boot/dts/socfpga_cyclone5_de10_nano.dtb > zImage_dtb
+        run: |
+          cat arch/arm/boot/zImage \
+              arch/arm/boot/dts/socfpga_cyclone5_de10_nano.dtb \
+              > zImage_dtb
 
       - name: Set build metadata
         id: meta
         run: |
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
-          echo "sha=$(git -C kernel-src rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: zImage_dtb
-          path: kernel-src/zImage_dtb
+          path: zImage_dtb
 
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
@@ -81,8 +83,10 @@ jobs:
           name: MiSTer Kernel Build ${{ steps.meta.outputs.date }}
           body: |
             Automated MiSTer Linux kernel build.
-            Source ref: ${{ github.event.inputs.kernel_ref || 'master' }}
+
+            Source repository: ${{ github.repository }}
+            Source ref: ${{ github.ref_name }}
             Source commit: ${{ steps.meta.outputs.sha }}
-          files: kernel-src/zImage_dtb
+          files: zImage_dtb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
