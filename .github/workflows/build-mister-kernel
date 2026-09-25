@@ -1,0 +1,113 @@
+name: Build MiSTer Linux Kernel
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+# env:
+#   TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
+#   TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+
+    steps:
+      # Checks out the repository and ref that triggered this workflow.
+      # No external MiSTer-devel repository is cloned.
+      - name: Checkout current repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            gcc-arm-linux-gnueabihf \
+            build-essential \
+            git \
+            libncurses-dev \
+            libncurses5-dev \
+            flex \
+            bison \
+            openssl \
+            libssl-dev \
+            dkms \
+            libelf-dev \
+            libudev-dev \
+            libpci-dev \
+            libiberty-dev \
+            autoconf \
+            liblz4-tool \
+            bc \
+            curl \
+            lzop \
+            u-boot-tools \
+            libgmp3-dev \
+            libmpc-dev
+
+      # - name: Cache cross-compiler toolchain
+      #   id: cache-toolchain
+      #   uses: actions/cache@v4
+      #   with:
+      #     path: /opt/${{ env.TOOLCHAIN_NAME }}
+      #     key: ${{ env.TOOLCHAIN_NAME }}
+
+      # - name: Download ARM cross-compiler toolchain
+      #   if: steps.cache-toolchain.outputs.cache-hit != 'true'
+      #   run: |
+      #     wget -c "${TOOLCHAIN_URL}"
+      #     sudo mkdir -p /opt
+      #     sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
+      #     sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
+
+      - name: Show build information
+        run: |
+          echo "Repository: ${{ github.repository }}"
+          echo "Ref: ${{ github.ref_name }}"
+          echo "Commit: $(git rev-parse --short HEAD)"
+
+      - name: Configure and build kernel
+        env:
+          ARCH: arm
+          EXTRAVERSION: -MiSTer
+          CROSS_COMPILE: arm-linux-gnueabihf-
+        run: |
+          make MiSTer_defconfig
+          make -j"$(nproc)" zImage
+          make intel/socfpga/socfpga_cyclone5_de10_nano.dtb
+
+      - name: Concatenate zImage + device tree
+        run: |
+          cat \
+            arch/arm/boot/zImage \
+            arch/arm/boot/dts/intel/socfpga/socfpga_cyclone5_de10_nano.dtb \
+            > zImage_dtb
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          echo "date=$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
+          echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: zImage_dtb
+          path: zImage_dtb
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mister-kernel-${{ steps.meta.outputs.date }}-${{ steps.meta.outputs.sha }}
+          name: MiSTer Kernel Build ${{ steps.meta.outputs.date }}
+          body: |
+            Automated MiSTer Linux kernel build.
+
+            Repository: ${{ github.repository }}
+            Ref: ${{ github.ref_name }}
+            Commit: ${{ steps.meta.outputs.sha }}
+          files: zImage_dtb
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
