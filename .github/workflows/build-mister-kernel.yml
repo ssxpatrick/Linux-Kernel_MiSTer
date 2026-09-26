@@ -6,17 +6,15 @@ on:
 permissions:
   contents: write
 
-# env:
-#   TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
-#   TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
+env:
+  TOOLCHAIN_NAME: gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf
+  TOOLCHAIN_URL: https://developer.arm.com/-/media/Files/downloads/gnu-a/10.2-2020.11/binrel/gcc-arm-10.2-2020.11-x86_64-arm-none-linux-gnueabihf.tar.xz
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
-      # Checks out the repository and ref that triggered this workflow.
-      # No external MiSTer-devel repository is cloned.
       - name: Checkout current repository
         uses: actions/checkout@v4
 
@@ -24,7 +22,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            gcc-arm-linux-gnueabihf \
             build-essential \
             git \
             libncurses-dev \
@@ -47,26 +44,20 @@ jobs:
             libgmp3-dev \
             libmpc-dev
 
-      # - name: Cache cross-compiler toolchain
-      #   id: cache-toolchain
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: /opt/${{ env.TOOLCHAIN_NAME }}
-      #     key: ${{ env.TOOLCHAIN_NAME }}
-
-      # - name: Download ARM cross-compiler toolchain
-      #   if: steps.cache-toolchain.outputs.cache-hit != 'true'
-      #   run: |
-      #     wget -c "${TOOLCHAIN_URL}"
-      #     sudo mkdir -p /opt
-      #     sudo tar xf "${TOOLCHAIN_NAME}.tar.xz" -C /opt
-      #     sudo chown -R root:root "/opt/${TOOLCHAIN_NAME}"
+      - name: Download ARM 10.2-2020.11 cross-compiler toolchain
+        run: |
+          curl -fL -o toolchain.tar.xz "${TOOLCHAIN_URL}"
+          sudo mkdir -p "/opt/${TOOLCHAIN_NAME}"
+          sudo tar xf toolchain.tar.xz -C "/opt/${TOOLCHAIN_NAME}" --strip-components=1
+          rm toolchain.tar.xz
+          echo "/opt/${TOOLCHAIN_NAME}/bin" >> "$GITHUB_PATH"
 
       - name: Show build information
         run: |
           echo "Repository: ${{ github.repository }}"
           echo "Ref: ${{ github.ref_name }}"
           echo "Commit: $(git rev-parse --short HEAD)"
+          echo "Compiler: $(arm-linux-gnueabihf-gcc --version | head -n1)"
 
       - name: Configure and build kernel
         env:
@@ -90,6 +81,8 @@ jobs:
         run: |
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "kernel_version=$(sed -nE 's/.*"(.*)".*/\1/p' include/generated/utsrelease.h)" >> "$GITHUB_OUTPUT"
+          echo "compiler_version=$(arm-linux-gnueabihf-gcc --version | head -n1)" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
@@ -108,6 +101,8 @@ jobs:
             Repository: ${{ github.repository }}
             Ref: ${{ github.ref_name }}
             Commit: ${{ steps.meta.outputs.sha }}
+            Linux version: ${{ steps.meta.outputs.kernel_version }}
+            Compiler: ${{ steps.meta.outputs.compiler_version }}
           files: zImage_dtb
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
