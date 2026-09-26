@@ -57,13 +57,13 @@ jobs:
           echo "Repository: ${{ github.repository }}"
           echo "Ref: ${{ github.ref_name }}"
           echo "Commit: $(git rev-parse --short HEAD)"
-          echo "Compiler: $(arm-linux-gnueabihf-gcc --version | head -n1)"
+          echo "Compiler: $(arm-none-linux-gnueabihf-gcc --version | head -n1)"
 
       - name: Configure and build kernel
         env:
           ARCH: arm
           EXTRAVERSION: -MiSTer
-          CROSS_COMPILE: arm-linux-gnueabihf-
+          CROSS_COMPILE: arm-none-linux-gnueabihf-
         run: |
           make MiSTer_defconfig
           make -j"$(nproc)" zImage
@@ -82,7 +82,7 @@ jobs:
           echo "date=$(date +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
           echo "sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
           echo "kernel_version=$(sed -nE 's/.*"(.*)".*/\1/p' include/generated/utsrelease.h)" >> "$GITHUB_OUTPUT"
-          echo "compiler_version=$(arm-linux-gnueabihf-gcc --version | head -n1)" >> "$GITHUB_OUTPUT"
+          echo "compiler_version=$(arm-none-linux-gnueabihf-gcc --version | head -n1)" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
